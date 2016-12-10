@@ -1,84 +1,73 @@
-//
-// # SimpleServer
-//
-// A simple chat server using Socket.IO, Express, and Async.
-//
-var http = require('http');
-var path = require('path');
-
-var async = require('async');
-var socketio = require('socket.io');
+var path    = require("path");
 var express = require('express');
+var app = express();
 
-//
-// ## SimpleServer `SimpleServer(obj)`
-//
-// Creates a new instance of SimpleServer with the following options:
-//  * `port` - The HTTP port to listen on. If `process.env.PORT` is set, _it overrides this value_.
-//
-var router = express();
-var server = http.createServer(router);
-var io = socketio.listen(server);
-
-router.use(express.static(path.resolve(__dirname, 'client')));
-var messages = [];
-var sockets = [];
-
-io.on('connection', function (socket) {
-    messages.forEach(function (data) {
-      socket.emit('message', data);
-    });
-
-    sockets.push(socket);
-
-    socket.on('disconnect', function () {
-      sockets.splice(sockets.indexOf(socket), 1);
-      updateRoster();
-    });
-
-    socket.on('message', function (msg) {
-      var text = String(msg || '');
-
-      if (!text)
+app.get('/',function(req,res){
+    //console.log(req);
+    res.sendFile('index.html', { root: __dirname });
+    console.log(__dirname);
+    var parameter = req.url.slice(1);
+    console.log(parameter);
+    if (parameter === 'favicon.ico') {
+        res.writeHead(200, {'Content-Type': 'image/x-icon'} );
+        res.end();
+        //console.log('favicon requested');
         return;
-
-      socket.get('name', function (err, name) {
-        var data = {
-          name: name,
-          text: text
-        };
-
-        broadcast('message', data);
-        messages.push(data);
-      });
-    });
-
-    socket.on('identify', function (name) {
-      socket.set('name', String(name || 'Anonymous'), function (err) {
-        updateRoster();
-      });
-    });
-  });
-
-function updateRoster() {
-  async.map(
-    sockets,
-    function (socket, callback) {
-      socket.get('name', callback);
-    },
-    function (err, names) {
-      broadcast('roster', names);
     }
-  );
-}
-
-function broadcast(event, data) {
-  sockets.forEach(function (socket) {
-    socket.emit(event, data);
-  });
-}
-
-server.listen(process.env.PORT || 3000, process.env.IP || "0.0.0.0", function(){
-  var addr = server.address();
-  console.log("Chat server listening at", addr.address + ":" + addr.port);
+    else
+    {
+     //need to first determine if the url works
+     //if the url works, then I need to convert it to a code
+     //would need to store the code in something like a database
+     //then, if the person enters the code, i need to look up the database and try to go
+     //but this work would be a lot easier if I didn't have to parse the URL, but could 
+     //actually, take in a field 
+        //res.sendFile(path.join(__dirname+'/index.html'));
+        
+        res.end(JSON.stringify(parameter));    
+    }
 });
+
+
+
+
+    
+    
+
+
+/*
+User Story: I can pass a URL as a parameter and I will receive a shortened URL in the JSON response.
+
+User Story: If I pass an invalid URL that doesn't follow the valid http://www.example.com format, the JSON response will contain an error instead.
+
+User Story: When I visit that shortened URL, it will redirect me to my original link.
+*/
+
+app.listen(process.env.PORT, function(){
+    console.log("Server listening on: "+ process.env.PORT);
+});
+
+/*
+var http = require("http")
+var server = http.createServer(function(req,res){
+    //IP address, language and operating system for my browser.
+    //console.log(req.connection)
+    var ip_address = req.headers['x-forwarded-for'];
+    var language = req.headers['accept-language'];
+    var os = req.headers['user-agent'];
+    var output = {
+        "ipaddress": ip_address,
+        "language": language,
+        "software": os
+    }
+    output = JSON.stringify(output)
+    res.end(output)
+})
+
+
+server.listen(process.env.PORT, function(){
+    console.log("Server listening on: "+ process.env.PORT);
+});
+*/
+
+
