@@ -4,5 +4,10 @@
   "description": "Shorten the URL, think bitly",
   "main": "server.js",
   "repository": "",
-  "author": "Shaw Li <shaw.s.li@gmail.com>"
+  "author": "Shaw Li <shaw.s.li@gmail.com>",
+  "dependencies": {
+    "express": "^4.14.0",
+    "mongodb": "^2.2.15",
+    "request": "^2.79.0"
+  }
 }
