@@ -6,7 +6,7 @@ const url = 'mongodb://localhost:27017/data';
 var app = express();
 
 
-// Use connect method to connect to the Server
+// need to change url to mongodb_url when in production
 function storeData(val){
     mongo.connect(mongodb_url, function (err, db) {
       if (err) {
@@ -15,7 +15,9 @@ function storeData(val){
         console.log('Connection established to', mongodb_url);
         var data = db.collection('data');
         data.insert(val,function (err,dataResponse) {
-          if (err){ throw err}
+          if (err){ 
+              throw err;
+            }
             console.log(JSON.stringify(val));
           });
         db.close();
@@ -23,18 +25,38 @@ function storeData(val){
     }); 
 };
 
-  
-  
+
+function checkData(val, cb){
+  mongo.connect(mongodb_url,function (err, db){
+       if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+      } else {
+        console.log('Connection established to', mongodb_url);
+        var data = db.collection('data');
+        console.log('what is val: '+val);
+        data.find({
+            'shortened_url':val
+        },{
+            _id:0,
+            'shortened_url':0
+        }).toArray(function (err,documents) {
+            if (err) {
+                throw err // throw err causes the end It is a little like return console.log(err), except here I don't have the return
+            }    
+            console.log(documents[0].original_url);
+            console.log(documents);
+            return cb(documents[0].original_url.toString());
+          });
+      }
+      db.close();
+  });  
+};
 
 
-//app.use(express.static( 'public' ) ) //this is to use a static file;
 app.use('/new',function(req,res){
-    //console.log(req.headers['x-forwarded-for']);
-    //var rememberArray =[];
     var final_response={};
     var parameter = req.url.slice(1);
     console.log('parameter: '+parameter);
-    //res.sendFile('index.html', {root: __dirname});
     if (parameter === 'favicon.ico') {
         console.log('favicon requested');
         res.writeHead(200, {'Content-Type': 'image/x-icon'} );
@@ -49,18 +71,35 @@ app.use('/new',function(req,res){
                var new_url = generateURL();
                final_response.original_url = original_url;
                final_response.shortened_url = new_url;
-               //rememberArray.push([new_url,original_url]);
                storeData(final_response);
                res.end(JSON.stringify(final_response));                      
            } else {
                 console.log('error log: '+err);
                 final_response.error = 'Something wrong with the data';
-                
                 res.end(JSON.stringify(final_response));                      
            }
         });
         
     }
+});
+
+app.use(express.static( 'public' ) ) //this is to use a static file;
+app.get('/',function(req,res){
+   res.sendFile('index.html', {root: __dirname});
+   res.end();
+});
+
+app.use('/visit',function(req,res){
+   var parameter = req.url.slice(1);
+   //res.redirect('http://www.techcrunch.com');
+   if (!isNaN(parameter)){
+       var outputURL = "";
+        checkData(Number(parameter), function(cb){
+           console.log(cb);
+           res.redirect(cb);
+        });
+   }
+   
 });
 
 function generateURL(){
