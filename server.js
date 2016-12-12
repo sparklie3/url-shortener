@@ -1,38 +1,72 @@
-var path    = require("path");
+var request = require('request');
 var express = require('express');
+var mongo = require('mongodb').MongoClient
+const mongodb_url = process.env.MONGOLAB_URI;
+const url = 'mongodb://localhost:27017/data';      
 var app = express();
 
-app.get('/',function(req,res){
-    //console.log(req);
-    res.sendFile('index.html', { root: __dirname });
-    console.log(__dirname);
+
+// Use connect method to connect to the Server
+function storeData(val){
+    mongo.connect(mongodb_url, function (err, db) {
+      if (err) {
+        console.log('Unable to connect to the mongoDB server. Error:', err);
+      } else {
+        console.log('Connection established to', mongodb_url);
+        var data = db.collection('data');
+        data.insert(val,function (err,dataResponse) {
+          if (err){ throw err}
+            console.log(JSON.stringify(val));
+          });
+        db.close();
+      }
+    }); 
+};
+
+  
+  
+
+
+//app.use(express.static( 'public' ) ) //this is to use a static file;
+app.use('/new',function(req,res){
+    //console.log(req.headers['x-forwarded-for']);
+    //var rememberArray =[];
+    var final_response={};
     var parameter = req.url.slice(1);
-    console.log(parameter);
+    console.log('parameter: '+parameter);
+    //res.sendFile('index.html', {root: __dirname});
     if (parameter === 'favicon.ico') {
+        console.log('favicon requested');
         res.writeHead(200, {'Content-Type': 'image/x-icon'} );
         res.end();
-        //console.log('favicon requested');
-        return;
     }
-    else
+    else 
     {
-     //need to first determine if the url works
-     //if the url works, then I need to convert it to a code
-     //would need to store the code in something like a database
-     //then, if the person enters the code, i need to look up the database and try to go
-     //but this work would be a lot easier if I didn't have to parse the URL, but could 
-     //actually, take in a field 
-        //res.sendFile(path.join(__dirname+'/index.html'));
+        var original_url = parameter;
+        request.get(original_url,function(err, response, body){
+           if (!err && response.statusCode == 200){
+               console.log('console code: '+ response.statusCode);
+               var new_url = generateURL();
+               final_response.original_url = original_url;
+               final_response.shortened_url = new_url;
+               //rememberArray.push([new_url,original_url]);
+               storeData(final_response);
+               res.end(JSON.stringify(final_response));                      
+           } else {
+                console.log('error log: '+err);
+                final_response.error = 'Something wrong with the data';
+                
+                res.end(JSON.stringify(final_response));                      
+           }
+        });
         
-        res.end(JSON.stringify(parameter));    
     }
 });
 
+function generateURL(){
+    return Math.round((Math.random()*10000000))
+}
 
-
-
-    
-    
 
 
 /*
