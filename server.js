@@ -8,11 +8,11 @@ var app = express();
 
 // need to change url to mongodb_url when in production
 function storeData(val){
-    mongo.connect(url, function (err, db) {
+    mongo.connect(mongodb_url, function (err, db) {
       if (err) {
         console.log('Unable to connect to the mongoDB server. Error:', err);
       } else {
-        console.log('Connection established to', url);
+        console.log('Connection established to', mongodb_url);
         var data = db.collection('data');
         data.insert(val,function (err,dataResponse) {
           if (err){ 
@@ -27,11 +27,11 @@ function storeData(val){
 
 
 function checkData(val, cb){
-  mongo.connect(url,function (err, db){
+  mongo.connect(mongodb_url,function (err, db){
        if (err) {
         console.log('Unable to connect to the mongoDB server. Error:', err);
       } else {
-        console.log('Connection established to', url);
+        console.log('Connection established to', mongodb_url);
         var data = db.collection('data');
         console.log('what is val: '+val);
         data.find({
